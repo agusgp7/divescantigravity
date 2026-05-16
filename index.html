@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>APP Divulgación – Charlas en Escuelas</title>
+  <meta name="description" content="Aplicación web para gestionar, coordinar y visualizar charlas educativas realizadas en escuelas." />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- App CSS -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <span class="logo-icon">🏫</span>
+        <div>
+          <h1 class="sidebar-title">Charlas en Escuelas</h1>
+          <p class="sidebar-subtitle">Mapa de seguimiento</p>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" id="nav-mapa" onclick="navegarA('mapa')" aria-label="Ir al mapa">
+        <span class="nav-icon">📍</span>
+        <span class="nav-label">Mapa</span>
+      </button>
+      <button class="nav-item" id="nav-planilla" onclick="navegarA('planilla')" aria-label="Ir a la planilla">
+        <span class="nav-icon">📋</span>
+        <span class="nav-label">Planilla</span>
+      </button>
+      <button class="nav-item" id="nav-estadisticas" onclick="navegarA('estadisticas')" aria-label="Ver estadísticas">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Estadísticas</span>
+      </button>
+      <button class="nav-item" id="nav-importar" onclick="navegarA('importar')" aria-label="Importar y exportar datos">
+        <span class="nav-icon">💾</span>
+        <span class="nav-label">Importar / Exportar</span>
+      </button>
+      <button class="nav-item" id="nav-calendario" onclick="navegarA('calendario')" aria-label="Ver calendario">
+        <span class="nav-icon">📅</span>
+        <span class="nav-label">Calendario</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <p class="sidebar-version">v1.0.0 · GitHub Pages</p>
+    </div>
+  </aside>
+
+  <!-- HAMBURGER (mobile) -->
+  <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Abrir menú">
+    <span></span><span></span><span></span>
+  </button>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content" id="main-content">
+
+    <!-- KPI CARDS -->
+    <section class="kpi-section" id="kpi-section">
+      <div class="kpi-card kpi-total" id="kpi-total">
+        <div class="kpi-icon">🏫</div>
+        <div class="kpi-info">
+          <span class="kpi-value" id="stat-total">0</span>
+          <span class="kpi-label">Total</span>
+        </div>
+      </div>
+      <div class="kpi-card kpi-realizadas" id="kpi-realizadas">
+        <div class="kpi-icon">✅</div>
+        <div class="kpi-info">
+          <span class="kpi-value" id="stat-realizadas">0</span>
+          <span class="kpi-label">Realizadas</span>
+        </div>
+      </div>
+      <div class="kpi-card kpi-coordinadas" id="kpi-coordinadas">
+        <div class="kpi-icon">🗓️</div>
+        <div class="kpi-info">
+          <span class="kpi-value" id="stat-coordinadas">0</span>
+          <span class="kpi-label">Coordinadas</span>
+        </div>
+      </div>
+      <div class="kpi-card kpi-sincoordinar" id="kpi-sincoordinar">
+        <div class="kpi-icon">⏳</div>
+        <div class="kpi-info">
+          <span class="kpi-value" id="stat-sincoordinar">0</span>
+          <span class="kpi-label">Sin coordinar</span>
+        </div>
+      </div>
+      <div class="kpi-card kpi-prioritarias" id="kpi-prioritarias">
+        <div class="kpi-icon">⭐</div>
+        <div class="kpi-info">
+          <span class="kpi-value" id="stat-prioritarias">0</span>
+          <span class="kpi-label">Prioritarias</span>
+        </div>
+      </div>
+      <div class="kpi-card kpi-alumnos" id="kpi-alumnos">
+        <div class="kpi-icon">👨‍🎓</div>
+        <div class="kpi-info">
+          <span class="kpi-value" id="stat-alumnos">0</span>
+          <span class="kpi-label">Alumnos</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= VISTA MAPA ======= -->
+    <section class="view active" id="view-mapa">
+      <!-- Filtros -->
+      <div class="filter-bar" id="filter-bar">
+        <div class="filter-group filter-left">
+          <button class="filter-btn filter-rojo active" id="btn-filter-rojo" onclick="filtrarEstado('rojo')" aria-label="Filtrar sin coordinar">
+            🔴 Sin coordinar
+          </button>
+          <button class="filter-btn filter-amarillo active" id="btn-filter-amarillo" onclick="filtrarEstado('amarillo')" aria-label="Filtrar coordinadas">
+            🟡 Coordinadas
+          </button>
+          <button class="filter-btn filter-verde active" id="btn-filter-verde" onclick="filtrarEstado('verde')" aria-label="Filtrar realizadas">
+            🟢 Realizadas
+          </button>
+        </div>
+        <div class="filter-group filter-center">
+          <button class="filter-btn filter-todas active" id="btn-filter-todas" onclick="filtrarTodas()" aria-label="Mostrar todas">
+            Todas
+          </button>
+          <button class="filter-btn filter-prioritarias" id="btn-filter-prioritarias" onclick="filtrarPrioritarias()" aria-label="Filtrar prioritarias Túnicas en Red">
+            ⭐ Túnicas en Red
+          </button>
+        </div>
+        <div class="filter-group filter-right">
+          <button class="filter-btn btn-agregar" id="btn-agregar" onclick="abrirModalAgregar()" aria-label="Agregar nueva escuela">
+            + Agregar escuela
+          </button>
+        </div>
+      </div>
+
+      <!-- Mapa + Panel detalle -->
+      <div class="map-layout">
+        <div class="map-container" id="map-container">
+          <div id="map"></div>
+        </div>
+        <aside class="detail-panel" id="detail-panel">
+          <div class="detail-empty" id="detail-empty">
+            <div class="detail-empty-icon">📍</div>
+            <h3>Seleccioná una escuela</h3>
+            <p>Hacé clic en un pin del mapa o en una fila de la planilla.</p>
+          </div>
+          <div class="detail-content hidden" id="detail-content">
+            <!-- se rellena dinámicamente -->
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ======= VISTA PLANILLA ======= -->
+    <section class="view" id="view-planilla">
+      <div class="view-header">
+        <h2 class="view-title">📋 Planilla de Escuelas</h2>
+        <div class="planilla-search-wrap">
+          <input type="text" id="planilla-search" class="planilla-search" placeholder="🔍 Buscar escuela..." oninput="renderTabla()" aria-label="Buscar escuela" />
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table class="planilla-table" id="planilla-table">
+          <thead>
+            <tr>
+              <th>Esc.</th>
+              <th>Nombre</th>
+              <th>Dirección</th>
+              <th>Tipo</th>
+              <th>Teléfono</th>
+              <th>Estado</th>
+              <th>Prior.</th>
+              <th>F. Coord.</th>
+              <th>F. Real.</th>
+              <th>Alumnos</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="planilla-tbody">
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ======= VISTA ESTADÍSTICAS ======= -->
+    <section class="view" id="view-estadisticas">
+      <div class="view-header">
+        <h2 class="view-title">📊 Estadísticas</h2>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card stat-card-total">
+          <div class="stat-card-icon">🏫</div>
+          <div class="stat-card-value" id="est-total">0</div>
+          <div class="stat-card-label">Total de escuelas</div>
+        </div>
+        <div class="stat-card stat-card-realizadas">
+          <div class="stat-card-icon">✅</div>
+          <div class="stat-card-value" id="est-realizadas">0</div>
+          <div class="stat-card-label">Charlas realizadas</div>
+        </div>
+        <div class="stat-card stat-card-coordinadas">
+          <div class="stat-card-icon">🗓️</div>
+          <div class="stat-card-value" id="est-coordinadas">0</div>
+          <div class="stat-card-label">Charlas coordinadas</div>
+        </div>
+        <div class="stat-card stat-card-sincoordinar">
+          <div class="stat-card-icon">⏳</div>
+          <div class="stat-card-value" id="est-sincoordinar">0</div>
+          <div class="stat-card-label">Sin coordinar</div>
+        </div>
+        <div class="stat-card stat-card-prioritarias">
+          <div class="stat-card-icon">⭐</div>
+          <div class="stat-card-value" id="est-prioritarias">0</div>
+          <div class="stat-card-label">Prioritarias (Túnicas en Red)</div>
+        </div>
+        <div class="stat-card stat-card-alumnos">
+          <div class="stat-card-icon">👨‍🎓</div>
+          <div class="stat-card-value" id="est-alumnos">0</div>
+          <div class="stat-card-label">Alumnos alcanzados</div>
+        </div>
+      </div>
+
+      <!-- Barra de progreso -->
+      <div class="progress-section">
+        <h3 class="progress-title">Progreso general</h3>
+        <div class="progress-bar-wrap">
+          <div class="progress-label">
+            <span>Realizadas</span>
+            <span id="progress-pct-realizadas">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill progress-fill-verde" id="progress-fill-realizadas" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-label">
+            <span>Coordinadas</span>
+            <span id="progress-pct-coordinadas">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill progress-fill-amarillo" id="progress-fill-coordinadas" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-label">
+            <span>Sin coordinar</span>
+            <span id="progress-pct-sincoordinar">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill progress-fill-rojo" id="progress-fill-sincoordinar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= VISTA IMPORTAR/EXPORTAR ======= -->
+    <section class="view" id="view-importar">
+      <div class="view-header">
+        <h2 class="view-title">💾 Importar / Exportar</h2>
+      </div>
+      <div class="ie-grid">
+        <div class="ie-card">
+          <h3 class="ie-card-title">📤 Exportar datos</h3>
+          <p class="ie-card-desc">Descargá todos los datos actuales en un archivo <code>.json</code> para hacer un respaldo.</p>
+          <button class="btn btn-primary" id="btn-exportar" onclick="exportarJSON()">⬇️ Exportar JSON</button>
+          <textarea class="json-preview" id="json-preview" readonly placeholder="El JSON exportado aparecerá aquí..."></textarea>
+        </div>
+        <div class="ie-card">
+          <h3 class="ie-card-title">📥 Importar datos</h3>
+          <p class="ie-card-desc">Cargá un archivo <code>.json</code> previamente exportado. <strong>Esto reemplazará los datos actuales.</strong></p>
+          <label class="btn btn-secondary file-label" for="file-import">📂 Seleccionar archivo JSON</label>
+          <input type="file" id="file-import" accept=".json" onchange="importarJSON(event)" style="display:none;" />
+          <div class="import-status hidden" id="import-status"></div>
+        </div>
+        <div class="ie-card ie-card-danger">
+          <h3 class="ie-card-title">🗑️ Borrar todo</h3>
+          <p class="ie-card-desc">Elimina <strong>todos los datos</strong> guardados. Esta acción no se puede deshacer.</p>
+          <button class="btn btn-danger" id="btn-borrar" onclick="borrarTodo()">🗑️ Borrar todos los datos</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= VISTA CALENDARIO ======= -->
+    <section class="view" id="view-calendario">
+      <div class="view-header">
+        <h2 class="view-title">📅 Calendario de Charlas</h2>
+      </div>
+      <div class="calendar-nav">
+        <button class="cal-nav-btn" id="cal-prev" onclick="cambiarMes(-1)" aria-label="Mes anterior">&#8592;</button>
+        <span class="cal-month-label" id="cal-month-label">Mayo 2026</span>
+        <button class="cal-nav-btn" id="cal-next" onclick="cambiarMes(1)" aria-label="Mes siguiente">&#8594;</button>
+      </div>
+      <div class="calendar-grid" id="calendar-grid">
+        <!-- días de la semana -->
+        <div class="cal-day-header">Dom</div>
+        <div class="cal-day-header">Lun</div>
+        <div class="cal-day-header">Mar</div>
+        <div class="cal-day-header">Mié</div>
+        <div class="cal-day-header">Jue</div>
+        <div class="cal-day-header">Vie</div>
+        <div class="cal-day-header">Sáb</div>
+        <!-- celdas generadas por JS -->
+      </div>
+      <div class="cal-legend">
+        <span class="cal-legend-item cal-legend-coordinada">🟡 Coordinada</span>
+        <span class="cal-legend-item cal-legend-realizada">🟢 Realizada</span>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- =========== MODAL AGREGAR/EDITAR ESCUELA =========== -->
+  <div class="modal-overlay hidden" id="modal-overlay" onclick="cerrarModalOverlay(event)">
+    <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Agregar escuela</h2>
+        <button class="modal-close" onclick="cerrarModal()" aria-label="Cerrar modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-escuela" onsubmit="guardarEscuela(event)">
+          <input type="hidden" id="form-id" />
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="form-escuela">Escuela N°</label>
+              <input type="text" id="form-escuela-num" placeholder="Ej: 21" required />
+            </div>
+            <div class="form-group">
+              <label for="form-nombre">Nombre</label>
+              <input type="text" id="form-nombre" placeholder="Nombre de la escuela" required />
+            </div>
+            <div class="form-group form-full">
+              <label for="form-direccion">Dirección</label>
+              <input type="text" id="form-direccion" placeholder="Calle y número" />
+            </div>
+            <div class="form-group">
+              <label for="form-localidad">Localidad</label>
+              <input type="text" id="form-localidad" placeholder="Ciudad o pueblo" />
+            </div>
+            <div class="form-group">
+              <label for="form-departamento">Departamento</label>
+              <input type="text" id="form-departamento" placeholder="Departamento" />
+            </div>
+            <div class="form-group">
+              <label for="form-tipo">Tipo</label>
+              <select id="form-tipo">
+                <option value="Primaria">Primaria</option>
+                <option value="Secundaria">Secundaria</option>
+                <option value="Especial">Especial</option>
+                <option value="Técnica">Técnica</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="form-telefono">Teléfono</label>
+              <input type="text" id="form-telefono" placeholder="+54 9 ..." />
+            </div>
+            <div class="form-group">
+              <label for="form-lat">Latitud</label>
+              <input type="number" id="form-lat" step="any" placeholder="-31.xxxxx" />
+            </div>
+            <div class="form-group">
+              <label for="form-lng">Longitud</label>
+              <input type="number" id="form-lng" step="any" placeholder="-64.xxxxx" />
+            </div>
+            <div class="form-group">
+              <label for="form-estado">Estado</label>
+              <select id="form-estado">
+                <option value="rojo">🔴 Sin coordinar</option>
+                <option value="amarillo">🟡 Coordinada</option>
+                <option value="verde">🟢 Realizada</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="form-fecha-coordinada">Fecha coordinada</label>
+              <input type="datetime-local" id="form-fecha-coordinada" />
+            </div>
+            <div class="form-group">
+              <label for="form-fecha-realizada">Fecha realizada</label>
+              <input type="datetime-local" id="form-fecha-realizada" />
+            </div>
+            <div class="form-group form-full">
+              <label for="form-charlistas">Charlistas</label>
+              <input type="text" id="form-charlistas" placeholder="Nombres separados por coma" />
+            </div>
+            <div class="form-group">
+              <label for="form-alumnos">Alumnos</label>
+              <input type="number" id="form-alumnos" min="0" placeholder="Cantidad" />
+            </div>
+            <div class="form-group form-full">
+              <label for="form-imagen-grupo">Imagen del grupo (URL o link)</label>
+              <input type="text" id="form-imagen-grupo" placeholder="https://..." />
+            </div>
+            <div class="form-group form-full">
+              <label for="form-imagen-formulario">Formulario firmado (URL o link)</label>
+              <input type="text" id="form-imagen-formulario" placeholder="https://..." />
+            </div>
+            <div class="form-group form-full">
+              <label for="form-observaciones">Observaciones</label>
+              <textarea id="form-observaciones" rows="3" placeholder="Notas adicionales..."></textarea>
+            </div>
+            <div class="form-group form-full">
+              <label class="checkbox-label">
+                <input type="checkbox" id="form-prioritaria" />
+                <span class="checkbox-custom"></span>
+                <span>⭐ Prioritaria – Túnicas en Red</span>
+              </label>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="btn-guardar-escuela">💾 Guardar escuela</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========== MODAL COORDINAR =========== -->
+  <div class="modal-overlay hidden" id="modal-coordinar-overlay" onclick="cerrarModalCoordinar(event)">
+    <div class="modal modal-sm" id="modal-coordinar" role="dialog" aria-modal="true" aria-labelledby="modal-coordinar-title">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-coordinar-title">📅 Coordinar charla</h2>
+        <button class="modal-close" onclick="cerrarModalCoordinar(null, true)" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="coordinar-id" />
+        <div class="form-group">
+          <label for="coordinar-fecha">Fecha y hora de la charla</label>
+          <input type="datetime-local" id="coordinar-fecha" required />
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="cerrarModalCoordinar(null, true)">Cancelar</button>
+          <button class="btn btn-amarillo" onclick="confirmarCoordenar()">🟡 Confirmar coordinación</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========== MODAL REALIZAR =========== -->
+  <div class="modal-overlay hidden" id="modal-realizar-overlay" onclick="cerrarModalRealizar(event)">
+    <div class="modal modal-sm" id="modal-realizar" role="dialog" aria-modal="true" aria-labelledby="modal-realizar-title">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-realizar-title">✅ Marcar como realizada</h2>
+        <button class="modal-close" onclick="cerrarModalRealizar(null, true)" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="realizar-id" />
+        <div class="form-group">
+          <label for="realizar-fecha">Fecha y hora de realización</label>
+          <input type="datetime-local" id="realizar-fecha" required />
+        </div>
+        <div class="form-group">
+          <label for="realizar-charlistas">Charlistas (nombres, separados por coma)</label>
+          <input type="text" id="realizar-charlistas" placeholder="Ej: María, Juan" required />
+        </div>
+        <div class="form-group">
+          <label for="realizar-alumnos">Cantidad de alumnos</label>
+          <input type="number" id="realizar-alumnos" min="0" required />
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="cerrarModalRealizar(null, true)">Cancelar</button>
+          <button class="btn btn-verde" onclick="confirmarRealizada()">🟢 Confirmar realización</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- App JS -->
+  <script src="app.js"></script>
+</body>
+</html>
